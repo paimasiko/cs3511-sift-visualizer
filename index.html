@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sift Algorithm Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .input-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        input {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .format-examples {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #e9ecef;
+        }
+        .diagonal {
+            background-color: #e2f3e5;
+        }
+        .below-diagonal {
+            background-color: #f8d7da;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #steps {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+        .explanation {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .image-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: nowrap;
+        }
+        .display-image {
+            max-width: 100%;
+            height: auto;
+            margin: 0;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        figure {
+            flex: 0 0 45%;
+            margin: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sift Algorithm Visualizer for S₄</h1>
+    
+    <div class="explanation">
+        <h2>How to Use This Visualizer</h2>
+        <p>This tool simulates the Sift algorithm for the symmetric group S₄ (permutations of 4 elements).</p>
+        <p><strong>Input Formats:</strong></p>
+        <ul>
+            <li><strong>Comma-separated cycles:</strong> <code>1,2,3</code> for the 3-cycle (1 2 3)</li>
+            <li><strong>Space-separated cycles:</strong> <code>(1 2) (3 4)</code> for the product of transpositions</li>
+            <li><strong>Arrow notation:</strong> <code>1->2 2->1 3->4 4->3</code> to specify exactly where each element maps</li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <div class="input-section">
+            <h2>Input Permutation</h2>
+            <input type="text" id="permInput" placeholder="Enter permutation (e.g., 1,2,3 or (1 2) (3 4))">
+            <div class="format-examples">Examples: 1,2,3 or (1 2) (3 4) or 1->2 2->3 3->1 4->4</div>
+            <button onclick="processSift()">Run Sift</button>
+            <button onclick="clearTable()">Clear Table</button>
+            <div id="error" class="error"></div>
+        </div>
+
+        <div class="table-container">
+            <h2>Schreier-Sims Table</h2>
+            <table id="siftTable">
+                <thead>
+                    <tr>
+                        <th>Row</th>
+                        <th>Stabilizes</th>
+                        <th>Column 0</th>
+                        <th>Column 1</th>
+                        <th>Column 2</th>
+                        <th>Column 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0</td>
+                        <td>-</td>
+                        <td class="diagonal" id="cell-0-1">e</td>
+                        <td id="cell-0-2"></td>
+                        <td id="cell-0-3"></td>
+                        <td id="cell-0-4"></td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>1</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="diagonal" id="cell-1-2">e</td>
+                        <td id="cell-1-3"></td>
+                        <td id="cell-1-4"></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>1,2</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="diagonal" id="cell-2-3">e</td>
+                        <td id="cell-2-4"></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>1,2,3</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="below-diagonal">N/A</td>
+                        <td class="diagonal" id="cell-3-4">e</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="steps">
+            <h2>Algorithm Steps</h2>
+            <p>Steps will appear here when you run the algorithm.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Store table state
+        const tableState = [
+            ["e", "", "", ""],
+            ["N/A", "e", "", ""],
+            ["N/A", "N/A", "e", ""],
+            ["N/A", "N/A", "N/A", "e"]
+        ];
+
+        // Convert cycle notation to permutation array
+        function cycleToPermutation(cycle) {
+            // Initialize with identity permutation
+            const perm = [1, 2, 3, 4];
+            
+            // Apply cycle
+            for (let i = 0; i < cycle.length - 1; i++) {
+                perm[cycle[i] - 1] = cycle[i + 1];
+            }
+            // Close the cycle
+            if (cycle.length > 0) {
+                perm[cycle[cycle.length - 1] - 1] = cycle[0];
+            }
+            
+            return perm;
+        }
+
+        // Function to apply a permutation to a value
+        function applyPermutation(perm, value) {
+            return perm[value - 1];
+        }
+
+        // Function to compose two permutations: (f ○ g)(x) = f(g(x))
+        function composePermutations(f, g) {
+            const result = [];
+            for (let i = 0; i < 4; i++) {
+                // Apply g first, then f to the result
+                result[i] = f[g[i] - 1];
+            }
+            return result;
+        }
+
+        // Function to invert a permutation
+        function invertPermutation(perm) {
+            const result = Array(perm.length).fill(0);
+            for (let i = 0; i < perm.length; i++) {
+                result[perm[i] - 1] = i + 1;
+            }
+            return result;
+        }
+
+        // Function to check if a permutation is the identity
+        function isIdentity(perm) {
+            for (let i = 0; i < perm.length; i++) {
+                if (perm[i] !== i + 1) return false;
+            }
+            return true;
+        }
+
+        // Function to format a permutation as a cycle notation string
+        function formatPermutation(perm) {
+            // Check if it's identity
+            if (isIdentity(perm)) {
+                return "e";
+            }
+
+            // Find cycles
+            const visited = new Set();
+            const cycles = [];
+            
+            for (let i = 0; i < perm.length; i++) {
+                const start = i + 1;
+                if (visited.has(start) || perm[i] === start) continue;
+                
+                const cycle = [start];
+                visited.add(start);
+                let next = perm[i];
+                
+                while (next !== start) {
+                    cycle.push(next);
+                    visited.add(next);
+                    next = perm[next - 1];
+                }
+                
+                if (cycle.length > 1) {
+                    cycles.push(`(${cycle.join(' ')})`);
+                }
+            }
+            
+            return cycles.length > 0 ? cycles.join(' ') : "e";
+        }
+
+        // Parse input in various formats
+        function parsePermutation(input) {
+            document.getElementById("error").textContent = "";
+            try {
+                // Initialize identity permutation
+                let perm = [1, 2, 3, 4];
+                
+                // Check if input uses arrow notation (1->2 2->3...)
+                if (input.includes('->')) {
+                    perm = parseArrowNotation(input);
+                }
+                // Check if input uses space-separated cycle notation like (1 2) (3 4)
+                else if (input.includes('(') && input.includes(')')) {
+                    perm = parseSpaceSeparatedCycles(input);
+                }
+                // Otherwise, assume comma-separated single cycle notation like 1,2,3
+                else {
+                    const cycle = input.split(',').map(n => parseInt(n.trim()));
+                    
+                    // Check if all elements are between 1 and 4
+                    for (const num of cycle) {
+                        if (isNaN(num) || num < 1 || num > 4) {
+                            throw new Error("All elements must be between 1 and 4");
+                        }
+                    }
+                    
+                    // Check if all elements in the cycle are unique
+                    const seen = new Set();
+                    for (const num of cycle) {
+                        if (seen.has(num)) {
+                            throw new Error("Cycles must contain unique elements");
+                        }
+                        seen.add(num);
+                    }
+                    
+                    perm = cycleToPermutation(cycle);
+                }
+                
+                return perm;
+            } catch (error) {
+                document.getElementById("error").textContent = error.message;
+                return null;
+            }
+        }
+
+        // Parse arrow notation (1->2 2->3 3->1 4->4)
+        function parseArrowNotation(input) {
+            // Start with identity permutation
+            const perm = [1, 2, 3, 4];
+            const mappings = input.split(/\s+/);
+            
+            // Track which elements have been mapped to ensure no element is mapped to twice
+            const targetsMapped = new Set();
+            
+            for (const mapping of mappings) {
+                const parts = mapping.split('->');
+                if (parts.length !== 2) {
+                    throw new Error(`Invalid mapping: ${mapping}. Expected format: n->m`);
+                }
+                
+                const from = parseInt(parts[0].trim());
+                const to = parseInt(parts[1].trim());
+                
+                if (isNaN(from) || from < 1 || from > 4) {
+                    throw new Error(`Invalid 'from' element: ${parts[0]}. Must be between 1 and 4.`);
+                }
+                
+                if (isNaN(to) || to < 1 || to > 4) {
+                    throw new Error(`Invalid 'to' element: ${parts[1]}. Must be between 1 and 4.`);
+                }
+                
+                if (targetsMapped.has(to)) {
+                    throw new Error(`Element ${to} is mapped to multiple times, which is not a valid permutation.`);
+                }
+                
+                targetsMapped.add(to);
+                perm[from - 1] = to;
+            }
+            
+            // Check if all four elements have been mapped
+            if (targetsMapped.size !== 4 && mappings.length > 0) {
+                throw new Error("Not all elements (1 through 4) have been mapped. A permutation must map all elements.");
+            }
+            
+            return perm;
+        }
+
+        // Parse space-separated cycles like (1 2) (3 4)
+        function parseSpaceSeparatedCycles(input) {
+            // Start with identity permutation
+            let perm = [1, 2, 3, 4];
+            
+            // Regular expression to match cycles
+            const cycleRegex = /\(([^)]+)\)/g;
+            let match;
+            
+            const cyclesFound = [];
+            while ((match = cycleRegex.exec(input)) !== null) {
+                cyclesFound.push(match[1]);
+            }
+            
+            if (cyclesFound.length === 0) {
+                throw new Error("No valid cycles found. Format should be like (1 2) (3 4)");
+            }
+            
+            // Process each cycle from right to left (as per standard composition)
+            for (let i = cyclesFound.length - 1; i >= 0; i--) {
+                const cycle = cyclesFound[i].split(/\s+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+                
+                // Check if all elements are between 1 and 4
+                for (const num of cycle) {
+                    if (num < 1 || num > 4) {
+                        throw new Error("All elements must be between 1 and 4");
+                    }
+                }
+                
+                // Check if all elements in the cycle are unique
+                const seen = new Set();
+                for (const num of cycle) {
+                    if (seen.has(num)) {
+                        throw new Error("Cycles must contain unique elements");
+                    }
+                    seen.add(num);
+                }
+                
+                // Convert cycle to permutation and compose with current permutation
+                const cyclePerm = cycleToPermutation(cycle);
+                perm = composePermutations(cyclePerm, perm);
+            }
+            
+            return perm;
+        }
+
+        // Get permutation from table
+        function getPermutationFromTable(row, col) {
+            const cellContent = tableState[row][col];
+            if (cellContent === "e") {
+                return [1, 2, 3, 4];
+            } else if (typeof cellContent === 'object' && cellContent.permArray) {
+                return cellContent.permArray;
+            }
+            return null;
+        }
+
+        // Implementation of the sift algorithm
+        function sift(perm) {
+            const steps = [];
+            const n = 4;
+            let i = 0;
+            let currentPerm = [...perm];
+            
+            steps.push(`Starting sift algorithm for permutation ${formatPermutation(perm)} (array: ${perm.join(',')})`);
+            
+            // Continue until we reach identity or need to insert
+            while (i < n) {
+                // If we've reached identity, we're done
+                if (isIdentity(currentPerm)) {
+                    steps.push(`Current permutation is the identity, algorithm complete`);
+                    break;
+                }
+
+                steps.push(`\nWorking on row ${i}, looking at position ${i+1}`);
+                
+                // Get the letter that currentPerm maps i+1 to
+                const mappedTo = currentPerm[i];
+                steps.push(`Permutation maps ${i+1} to ${mappedTo}`);
+                
+                // Check if there's a permutation y in row i that maps i+1 to the same letter
+                let found = false;
+                let yPerm = null;
+                let yCol = null;
+                
+                // Look through the table at row i
+                for (let col = 0; col < 4; col++) {
+                    const cellPerm = getPermutationFromTable(i, col);
+                    
+                    if (cellPerm) {
+                        if (cellPerm[i] === mappedTo) {
+                            found = true;
+                            yPerm = cellPerm;
+                            yCol = col + 1;
+                            steps.push(`Found a permutation ${formatPermutation(cellPerm)} in row ${i}, column ${yCol} that also maps ${i+1} to ${mappedTo}`);
+                            break;
+                        }
+                    }
+                }
+                
+                if (found) {
+                    // Compose y^-1 and x
+                    const yInverse = invertPermutation(yPerm);
+                    steps.push(`Computing y^-1 = ${formatPermutation(yInverse)}`);
+                    
+                    // Correct composition: y^-1 ○ x
+                    currentPerm = composePermutations(yInverse, currentPerm);
+                    steps.push(`New permutation after composition y^-1 ○ x: ${formatPermutation(currentPerm)} (array: ${currentPerm.join(',')})`);
+                    
+                    // Move to next row
+                    i++;
+                } else {
+                    // If we've reached the end of the algorithm and need to insert
+                    steps.push(`No matching permutation found in row ${i}, inserting current permutation at row ${i}, column ${mappedTo}`);
+                    
+                    // Store the permutation in the table
+                    tableState[i][mappedTo-1] = {
+                        display: formatPermutation(currentPerm),
+                        permArray: currentPerm
+                    };
+                    
+                    // Update the UI
+                    const cellId = `cell-${i}-${mappedTo}`;
+                    const cell = document.getElementById(cellId);
+                    if (cell) {
+                        cell.textContent = formatPermutation(currentPerm);
+                    }
+                    
+                    steps.push(`Inserted ${formatPermutation(currentPerm)} into the table at row ${i}, column ${mappedTo}`);
+                    break;
+                }
+            }
+            
+            return steps;
+        }
+
+        // Process button click
+        function processSift() {
+            document.getElementById("error").textContent = "";
+            const input = document.getElementById("permInput").value.trim();
+            
+            if (!input) {
+                document.getElementById("error").textContent = "Please enter a permutation";
+                return;
+            }
+            
+            const perm = parsePermutation(input);
+            
+            if (perm) {
+                const steps = sift(perm);
+                document.getElementById("steps").innerHTML = `<h2>Algorithm Steps</h2><pre>${steps.join('\n')}</pre>`;
+                updateTableUI();
+            }
+        }
+
+        // Update the UI from tableState
+        function updateTableUI() {
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const cellId = `cell-${i}-${j+1}`;
+                    const cell = document.getElementById(cellId);
+                    if (cell && !cell.classList.contains("below-diagonal")) {
+                        const content = tableState[i][j];
+                        if (typeof content === 'object' && content !== null) {
+                            cell.textContent = content.display;
+                        } else {
+                            cell.textContent = content || "";
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear the table (except diagonal and below)
+        function clearTable() {
+            document.getElementById("error").textContent = "";
+            document.getElementById("steps").innerHTML = `<h2>Algorithm Steps</h2><p>Steps will appear here when you run the algorithm.</p>`;
+            
+            // Reset table state
+            tableState[0][0] = "e";
+            tableState[1][1] = "e";
+            tableState[2][2] = "e";
+            tableState[3][3] = "e";
+            
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (i !== j) {
+                        if (j < i) {
+                            tableState[i][j] = "N/A";
+                        } else {
+                            tableState[i][j] = "";
+                        }
+                    }
+                }
+            }
+            
+            updateTableUI();
+        }
+
+        // Test the composition function
+        function testComposition() {
+            // (1 2 3) o (1 3 2 4)
+            const p1 = cycleToPermutation([1, 2, 3]);    // [2, 3, 1, 4]
+            const p2 = cycleToPermutation([1, 3, 2, 4]); // [3, 4, 1, 2]
+            
+            const composed = composePermutations(p1, p2);
+            console.log("Test: (1 2 3) o (1 3 2 4)");
+            console.log("p1:", p1);
+            console.log("p2:", p2);
+            console.log("Result:", composed);
+            console.log("Cycle notation:", formatPermutation(composed));
+        }
+
+        // Run test when page loads
+        window.onload = function() {
+            testComposition();
+        };
+    </script>
+    <h2 style="text-align: center;">Symmetric Group Visualizations</h2>
+    <div class="image-container">
+        
+        <figure style="display: inline-block; margin: 10px;">
+            <img src="S3.jpeg" alt="S3 Visualization" class="display-image">
+            <figcaption style="margin-top: 5px; font-weight: bold;">Table with strong generators for S<sub>3</sub></figcaption>
+        </figure>
+        <figure style="display: inline-block; margin: 10px;">
+            <img src="S4.jpeg" alt="S4 Visualization" class="display-image">
+            <figcaption style="margin-top: 5px; font-weight: bold;">Table with strong generators for S<sub>4</sub></figcaption>
+        </figure>
+    </div>
+
+</body>
+</html>
